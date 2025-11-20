@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecteur Audio - Comparaison des Décodages</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 1.05em;
+        }
+
+        select, input[type="file"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        select:hover, select:focus {
+            border-color: #667eea;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        input[type="file"] {
+            cursor: pointer;
+            padding: 10px;
+        }
+
+        .audio-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .audio-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .audio-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .audio-card h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .audio-card.no-loss h3 {
+            border-bottom-color: #28a745;
+        }
+
+        .audio-card.with-loss h3 {
+            border-bottom-color: #dc3545;
+        }
+
+        .audio-card.oneshot h3 {
+            border-bottom-color: #ffc107;
+        }
+
+        .audio-card.autoreg h3 {
+            border-bottom-color: #17a2b8;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 15px;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .audio-info {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .audio-info p {
+            margin: 5px 0;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .badge.no-loss {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge.with-loss {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .badge.oneshot {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge.autoreg {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .pattern-badge {
+            background: #e7e8ea;
+            color: #495057;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid #f5c6cb;
+        }
+
+        .info-box {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .speaker-info {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #ffc107;
+        }
+
+        .speaker-info strong {
+            color: #856404;
+        }
+
+        @media (max-width: 768px) {
+            .audio-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 Lecteur Audio - Comparaison des Décodages</h1>
+        <p class="subtitle">Comparez les différentes méthodes de reconstruction audio</p>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="speakerSelect">Sélectionnez un Speaker:</label>
+                <select id="speakerSelect">
+                    <option value="">-- Choisissez un speaker --</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="patternSelect">Sélectionnez un Pattern de Perte:</label>
+                <select id="patternSelect">
+                    <option value="random">Random (Aléatoire)</option>
+                    <option value="periodic">Periodic (Périodique)</option>
+                    <option value="burst">Burst (Rafale)</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="speakerInfo" class="speaker-info" style="display: none;">
+            <strong>Speaker sélectionné:</strong> <span id="speakerIdDisplay"></span>
+        </div>
+
+        <div id="audioContainer">
+            <div class="loading">
+                👆 Sélectionnez un speaker pour charger les fichiers audio
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration des chemins et speakers
+        const speakers = [
+            { id: '121', gender: 'F', name: '121-127105-0015' },
+            { id: '237', gender: 'F', name: '237-134500-0021' },
+            { id: '1221', gender: 'F', name: '1221-135767-0004' },
+            { id: '1284', gender: 'F', name: '1284-1181-0005' },
+            { id: '1580', gender: 'F', name: '1580-141084-0014' },
+            { id: '61', gender: 'M', name: '61-70968-0002' },
+            { id: '260', gender: 'M', name: '260-123288-0012' },
+            { id: '672', gender: 'M', name: '672-122797-0056' },
+            { id: '908', gender: 'M', name: '908-31957-0004' },
+            { id: '1089', gender: 'M', name: '1089-134691-0006' }
+        ];
+
+        const patterns = ['random', 'periodic', 'burst'];
+
+        // Initialiser le sélecteur de speakers
+        function initializeSpeakers() {
+            const select = document.getElementById('speakerSelect');
+            
+            speakers.forEach(speaker => {
+                const option = document.createElement('option');
+                option.value = speaker.name;
+                option.textContent = `Speaker ${speaker.id} (${speaker.gender === 'F' ? 'Femme' : 'Homme'}) - ${speaker.name}`;
+                select.appendChild(option);
+            });
+        }
+
+        // Générer les cartes audio
+        function loadAudioFiles() {
+            const speakerName = document.getElementById('speakerSelect').value;
+            const pattern = document.getElementById('patternSelect').value;
+            const container = document.getElementById('audioContainer');
+            const speakerInfo = document.getElementById('speakerInfo');
+            const speakerIdDisplay = document.getElementById('speakerIdDisplay');
+
+            if (!speakerName) {
+                container.innerHTML = '<div class="loading">👆 Sélectionnez un speaker pour charger les fichiers audio</div>';
+                speakerInfo.style.display = 'none';
+                return;
+            }
+
+            // Afficher les informations du speaker
+            const selectedSpeaker = speakers.find(s => s.name === speakerName);
+            if (selectedSpeaker) {
+                speakerIdDisplay.textContent = `${selectedSpeaker.id} (${selectedSpeaker.gender === 'F' ? 'Femme' : 'Homme'})`;
+                speakerInfo.style.display = 'block';
+            }
+
+            // Configuration des fichiers audio
+            const audioFiles = [
+                {
+                    title: 'Sans Perte (Original)',
+                    path: `sans_loss/${speakerName}_decoded.flac`,
+                    description: 'Reconstruction complète sans perte de paquets',
+                    type: 'no-loss',
+                    badges: ['Sans perte']
+                },
+                {
+                    title: `Avec Perte - ${pattern.charAt(0).toUpperCase() + pattern.slice(1)}`,
+                    path: `${pattern}_loss/${speakerName}_decoded.flac`,
+                    description: 'Reconstruction avec pertes, sans PLC',
+                    type: 'with-loss',
+                    badges: ['Avec perte', pattern]
+                },
+                {
+                    title: `One-Shot - ${pattern.charAt(0).toUpperCase() + pattern.slice(1)}`,
+                    path: `oneshot_${pattern}_loss/${speakerName}_decoded.flac`,
+                    description: 'Reconstruction avec PLC One-Shot',
+                    type: 'oneshot',
+                    badges: ['One-Shot', pattern]
+                },
+                {
+                    title: `Autorégressif - ${pattern.charAt(0).toUpperCase() + pattern.slice(1)}`,
+                    path: `autoreg_${pattern}_loss/${speakerName}_decoded.flac`,
+                    description: 'Reconstruction avec PLC Autorégressif',
+                    type: 'autoreg',
+                    badges: ['Autorégressif', pattern]
+                }
+            ];
+
+            // Générer le HTML
+            let html = '<div class="audio-grid">';
+            
+            audioFiles.forEach(file => {
+                html += `
+                    <div class="audio-card ${file.type}">
+                        <h3>${file.title}</h3>
+                        <div>
+                            ${file.badges.map((badge, idx) => 
+                                `<span class="badge ${idx === 0 ? file.type : 'pattern-badge'}">${badge}</span>`
+                            ).join('')}
+                        </div>
+                        <audio controls preload="metadata">
+                            <source src="${file.path}" type="audio/flac">
+                            Votre navigateur ne supporte pas l'élément audio.
+                        </audio>
+                        <div class="audio-info">
+                            <p><strong>Description:</strong> ${file.description}</p>
+                            <p><strong>Fichier:</strong> ${file.path}</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+
+            // Vérifier si les fichiers existent
+            checkAudioFiles();
+        }
+
+        // Vérifier l'existence des fichiers audio
+        function checkAudioFiles() {
+            const audioElements = document.querySelectorAll('audio');
+            
+            audioElements.forEach(audio => {
+                audio.addEventListener('error', function() {
+                    const card = this.closest('.audio-card');
+                    const info = card.querySelector('.audio-info');
+                    info.innerHTML += '<p style="color: #dc3545; font-weight: bold; margin-top: 10px;">⚠️ Fichier non trouvé</p>';
+                });
+
+                audio.addEventListener('loadedmetadata', function() {
+                    const card = this.closest('.audio-card');
+                    const info = card.querySelector('.audio-info');
+                    const duration = Math.round(this.duration);
+                    info.innerHTML += `<p><strong>Durée:</strong> ${duration}s</p>`;
+                });
+            });
+        }
+
+        // Event listeners
+        document.getElementById('speakerSelect').addEventListener('change', loadAudioFiles);
+        document.getElementById('patternSelect').addEventListener('change', loadAudioFiles);
+
+        // Initialiser au chargement
+        window.addEventListener('DOMContentLoaded', () => {
+            initializeSpeakers();
+        });
+    </script>
+</body>
+</html>
